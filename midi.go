@@ -30,6 +30,7 @@ func writer(out drivers.Out) (chan bool, chan midi.Message) {
 				outSender(msg)
 				time.Sleep(time.Microsecond * 1200)
 			case <-quit:
+				outSender(midi.Reset())
 				return
 			}
 		}
