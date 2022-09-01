@@ -44,6 +44,8 @@ func TestScaleWithTamperament(t *testing.T) {
 	s := newScale()
 
 	s.addTamperament("*", "Bb", -50)
+	s.addTamperament("5", "C", 50)
+	s.addTamperament("5", "Bb", 55)
 
 	if s.PitchMap["B3"] != 0 {
 		t.Errorf("Pitch not set correctly")
@@ -53,11 +55,19 @@ func TestScaleWithTamperament(t *testing.T) {
 		t.Errorf("Pitch not set correctly")
 	}
 
-	if len(s.ChannelMap) != 2 {
+	if s.PitchMap["Bb5"] != 55 {
+		t.Errorf("Pitch not set correctly")
+	}
+
+	if s.PitchMap["C5"] != 50 {
+		t.Errorf("Pitch not set correctly")
+	}
+
+	if len(s.ChannelMap) != 4 {
 		t.Errorf("Channel map not set correctly")
 	}
 
-	if s.ChannelMap[-50] != 1 {
+	if !(s.ChannelMap[-50] > 0 && s.ChannelMap[-50] < 4) {
 		t.Errorf("Channel pitch not set correctly")
 	}
 }

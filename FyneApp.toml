@@ -1,0 +1,6 @@
+[Details]
+  Icon = "./assets/logo.png"
+  Name = "MIDI Relay Tuner"
+  ID = "me.bitaraf.midituner"
+  Version = "1.0.0"
+  Build = 6
