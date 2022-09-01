@@ -27,6 +27,7 @@ func writer(out drivers.Out) (chan bool, chan midi.Message) {
 		for {
 			select {
 			case msg := <-message:
+				fmt.Println("Out: ", msg.String())
 				outSender(msg)
 				time.Sleep(time.Microsecond * 1200)
 			case <-quit:
@@ -39,7 +40,7 @@ func writer(out drivers.Out) (chan bool, chan midi.Message) {
 	return quit, message
 }
 
-func relay(in drivers.In, out drivers.Out) chan bool {
+func relay(in drivers.In, out drivers.Out, scale *Scale) chan bool {
 	quit := make(chan bool)
 	go func() {
 		outQuit, outSender := writer(out)
@@ -49,8 +50,9 @@ func relay(in drivers.In, out drivers.Out) chan bool {
 		for ch := 0; ch < 16; ch++ {
 			outSender <- midi.Pitchbend(uint8(ch), 0)
 		}
-
-		outSender <- midi.Pitchbend(3, -8192/4)
+		for pitch, channel := range scale.ChannelMap {
+			outSender <- midi.Pitchbend(uint8(channel), int16(pitch*8192/200))
+		}
 
 		stop, err := midi.ListenTo(in, func(msg midi.Message, timestampms int32) {
 
@@ -65,20 +67,19 @@ func relay(in drivers.In, out drivers.Out) chan bool {
 			case msg.GetNoteStart(&ch, &key, &vel):
 				fmt.Printf("starting note %s on channel %v with velocity %v\n", midi.Note(key), ch, vel)
 
-				if midi.Note(key).Name() == "B" {
-					outSender <- midi.NoteOn(3, key, vel)
-				} else {
-					outSender <- midi.NoteOn(0, key, vel)
-				}
+				note := midi.Note(key)
+				outSender <- midi.NoteOn(
+					uint8(scale.ChannelMap[scale.PitchMap[note.String()]]),
+					key, vel,
+				)
 
 			case msg.GetNoteEnd(&ch, &key):
 				fmt.Printf("ending note %s on channel %v\n", midi.Note(key), ch)
-
-				if midi.Note(key).Name() == "B" {
-					outSender <- midi.NoteOff(3, key)
-				} else {
-					outSender <- midi.NoteOff(0, key)
-				}
+				note := midi.Note(key)
+				outSender <- midi.NoteOff(
+					uint8(scale.ChannelMap[scale.PitchMap[note.String()]]),
+					key,
+				)
 
 			case msg.GetControlChange(&ch, &control, &value):
 				fmt.Println(midi.ControlChange(ch, control, value).String())
